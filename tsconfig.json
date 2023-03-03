@@ -1,0 +1,28 @@
+{
+    "compilerOptions": { // Credit: https://github.com/kleinerpirat
+        "module": "ESNext",
+        "target": "es2018",
+        "moduleResolution": "node",
+        "isolatedModules": true,
+        "skipLibCheck": true,
+        "typeRoots": ["node_modules/@types"],
+        "baseUrl": ".",
+        "allowSyntheticDefaultImports": true,
+        "allowJs": true,
+        "strict": true,
+        "noImplicitAny": false,
+        "strictNullChecks": false,
+        "forceConsistentCasingInFileNames": true,
+        "esModuleInterop": true
+    },
+    "include": ["test.ts"],
+    "exclude": [
+      "node_modules"
+    ],
+    "ts-node": {
+      "transpileOnly": true,
+      "files": true,
+      "esm": true,
+      "experimentalSpecifierResolution": "node"
+    },
+}

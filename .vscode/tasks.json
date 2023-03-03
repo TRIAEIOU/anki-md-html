@@ -1,0 +1,63 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Create output dirs",
+            "type": "shell",
+            "command": "Write-host Creating output directories... ; md -Force ./bin, ./dist | Out-Null",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "presentation": {
+                "echo": false,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        {
+            "label": "Build clean",
+            "type": "shell",
+            "command": "Write-host Building clean... ; rm -R -Force ./dist/*, ./bin/*",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "presentation": {
+                "echo": false,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        {
+            "label": "Build TS",
+            "type": "shell",
+            "command": "Write-host Building TS... ; node_modules/.bin/rollup -c",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": [
+                "Create output dirs"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        {
+            "label": "Build all",
+            "dependsOn": [
+                "Build TS",
+                "Build update"
+            ]
+        }
+    ]
+}
