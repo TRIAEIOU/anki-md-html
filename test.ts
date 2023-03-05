@@ -24,13 +24,12 @@ const DEFAULT_CFG = {
   }
 }
 const CPX_MD =
-`## Ok\n\nParagraph with breaking newline ->  \n<-\n\nUnordered list:\n\n- One\n- Two\n\nOrdered list:\n\n1. One\n2. Two\n\nNested list:\n\n- One\n  - Alpha\n  - Bravo\n- Two\n- Three\n\nA {{c1::clozed}} word.\n\nClozed list: {{c2::\n\n- One\n- Two\n\n}}\n\nClozed list item:\n\n- {{c2::One}}\n- Two\n\nClozed nested list:\n\n- One {{c3::\n  - Alpha\n  - Bravo\n  }}\n- Two\n- Three\n\nA GFM table:\n\n| GFM   | Style |\n| :---- | :---: |\n| table |  with |\n| cells |  rows |\n\nA headerless aligned table:\n\n| :---- | :--: |\n| table | with |\n| cells | rows |\n\nA headerless table:\n\n| ----- | ---- |\n| table | with |\n| cells | rows |\n\nInline media:\u00A0:video[\\_im-media-87243454-a9c9-4bdf-a763-1347baad9cf3.webm]{auto_front auto_back loop}\u00A0`
+`## Ok\n\nParagraph with breaking newline ->  \n<-\n\nUnordered list:\n\n- One\n- Two\n\nOrdered list:\n\n1. One\n2. Two\n\nNested list:\n\n- One\n  - Alpha\n  - Bravo\n- Two\n- Three\n\nA {{c1::clozed}} word.\n\nClozed list: {{c2::\n\n- One\n- Two\n\n}}\n\nClozed list item:\n\n- {{c2::One}}\n- Two\n\nClozed nested list:\n\n- One {{c3::\n\n  - Alpha\n  - Bravo\n\n  }}\n\n- Two\n\n- Three\n\nA GFM table:\n\n| GFM   | Style |\n| :---- | :---: |\n| table |  with |\n| cells |  rows |\n\nA headerless aligned table:\n\n| :---- | :--: |\n| table | with |\n| cells | rows |\n\nA headerless table:\n\n| ----- | ---- |\n| table | with |\n| cells | rows |\n\nInline media:\u00A0:video[\\_im-media-87243454-a9c9-4bdf-a763-1347baad9cf3.webm]{auto_front auto_back loop}\u00A0`
 const CPX_HTML =
-'<h2>Ok</h2>Paragraph with breaking newline -><br>&#x3C;-<br><br>Unordered list:<ul class="markdown-tight"><li>One</li><li>Two</li></ul>Ordered list:<ol class="markdown-tight"><li>One</li><li>Two</li></ol>Nested list:<ul class="markdown-tight"><li>One<ul class="markdown-tight"><li>Alpha</li><li>Bravo</li></ul></li><li>Two</li><li>Three</li></ul>A {{c1::clozed}} word.<br><br>Clozed list: {{c2::<ul class="markdown-tight"><li>One</li><li>Two</li></ul>}}<br><br>Clozed list item:<ul class="markdown-tight"><li>{{c2::One}}</li><li>Two</li></ul>Clozed nested list:<ul class="markdown-tight"><li>One {{c3::<ul class="markdown-tight"><li>Alpha</li><li>Bravo</li></ul>}}</li><li>Two</li><li>Three</li></ul>A GFM table:<table><thead><tr><th align="left">GFM</th><th align="center">Style</th></tr></thead><tbody><tr><td align="left">table</td><td align="center">with</td></tr><tr><td align="left">cells</td><td align="center">rows</td></tr></tbody></table>A headerless aligned table:<table><tbody><tr><td align="left">table</td><td align="center">with</td></tr><tr><td align="left">cells</td><td align="center">rows</td></tr></tbody></table>A headerless table:<table><tbody><tr><td>table</td><td>with</td></tr><tr><td>cells</td><td>rows</td></tr></tbody></table>Inline media:\u00A0<video id="im-media-87243454-a9c9-4bdf-a763-1347baad9cf3" src="_im-media-87243454-a9c9-4bdf-a763-1347baad9cf3.webm" class="inline-media" controls auto_front="" auto_back="" loop oncanplay="if(this.getRootNode().querySelector(\'anki-editable\') === null &#x26;&#x26; this.offsetParent !== null &#x26;&#x26; ((this.hasAttribute(\'auto_front\') &#x26;&#x26; !document.body.classList.contains(\'back\')) || (this.hasAttribute(\'auto_back\') &#x26;&#x26; document.body.classList.contains(\'back\')))) {this.play();}" oncontextmenu="pycmd(this.id); return true;"></video>\u00A0'
+'<h2>Ok</h2>Paragraph with breaking newline -><br>&#x3C;-<br><br>Unordered list:<ul class="markdown-tight"><li>One</li><li>Two</li></ul>Ordered list:<ol class="markdown-tight"><li>One</li><li>Two</li></ol>Nested list:<ul class="markdown-tight"><li>One<ul class="markdown-tight"><li>Alpha</li><li>Bravo</li></ul></li><li>Two</li><li>Three</li></ul>A {{c1::clozed}} word.<br><br>Clozed list: {{c2::<ul class="markdown-tight"><li>One</li><li>Two</li></ul>}}<br><br>Clozed list item:<ul class="markdown-tight"><li>{{c2::One}}</li><li>Two</li></ul>Clozed nested list:<ul class="markdown-loose"><li>One {{c3::<ul class="markdown-tight"><li>Alpha</li><li>Bravo</li></ul>}}</li><li>Two</li><li>Three</li></ul>A GFM table:<table><thead><tr><th align="left">GFM</th><th align="center">Style</th></tr></thead><tbody><tr><td align="left">table</td><td align="center">with</td></tr><tr><td align="left">cells</td><td align="center">rows</td></tr></tbody></table>A headerless aligned table:<table><tbody><tr><td align="left">table</td><td align="center">with</td></tr><tr><td align="left">cells</td><td align="center">rows</td></tr></tbody></table>A headerless table:<table><tbody><tr><td>table</td><td>with</td></tr><tr><td>cells</td><td>rows</td></tr></tbody></table>Inline media:\u00A0<video id="im-media-87243454-a9c9-4bdf-a763-1347baad9cf3" src="_im-media-87243454-a9c9-4bdf-a763-1347baad9cf3.webm" class="inline-media" controls auto_front="" auto_back="" loop oncanplay="if(this.getRootNode().querySelector(\'anki-editable\') === null &#x26;&#x26; this.offsetParent !== null &#x26;&#x26; ((this.hasAttribute(\'auto_front\') &#x26;&#x26; !document.body.classList.contains(\'back\')) || (this.hasAttribute(\'auto_back\') &#x26;&#x26; document.body.classList.contains(\'back\')))) {this.play();}" oncontextmenu="pycmd(this.id); return true;"></video>\u00A0'
 
 const nested = '<ul><li>One<ul><li>Alpha</li><li>Bravo</li></ul></li><li>Two</li></ul>'
 
-/*
 test('markdown_to_html', (t) => {
   const cfg = init(DEFAULT_CFG as any) as Configuration
   let html
@@ -286,10 +285,10 @@ Clozed nested list:
   t.end()
 })
 
-*/
+
 test('html_to_markdown', (t) => {
   const cfg = init(DEFAULT_CFG as any)
-  let md = html_to_markdown(nested, cfg)[0] //CPX_HTML
+  let md = html_to_markdown(CPX_HTML, cfg)[0] //CPX_HTML
   t.deepEqual(
     md,
     CPX_MD,
@@ -298,7 +297,7 @@ test('html_to_markdown', (t) => {
 
   t.end()
 })
-/*
+
 // These roundtrips require reasonably formated markdown
 test('roundtrip', (t) => {
   const cfg = init(DEFAULT_CFG as any)
@@ -318,4 +317,3 @@ test('roundtrip', (t) => {
 
   t.end()
 })
-*/

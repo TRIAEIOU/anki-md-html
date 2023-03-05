@@ -1,21 +1,17 @@
-import {remove} from 'unist-util-remove'
+import type {Options, Configuration} from './constants'
+import {TABLE_STYLE, NEWLINE, DEF_LIST, INLINE_MEDIA, MARKDOWN, EXTENSIONS, UNDERLINE, SUPERSCRIPT, SUBSCRIPT, STRIKETHROUGH} from './constants'
 
-import type {Element as HastElement, Node as HastNode} from 'hast'
+import type {Element as HastElement} from 'hast'
 import {fromHtml as hastFromHtml} from 'hast-util-from-html'
-import type {Options as HtmlToHastOptions} from 'hast-util-from-html'
 import {toHtml as hastToHtml} from 'hast-util-to-html'
-import type {Options as HastToHtmlOptions} from 'hast-util-to-html'
 import {toMdast as hastToMdast} from 'hast-util-to-mdast'
-import type {Options as HastToMdastOptions, Handle as HastToMdastHandle} from 'hast-util-to-mdast'
+import type {Handle as HastToMdastHandle} from 'hast-util-to-mdast'
 
 import {fromMarkdown as markdownToMdast} from 'mdast-util-from-markdown'
-import type {Options as MarkdownToMdastOptions} from 'mdast-util-from-markdown'
 import {toMarkdown as mdastToMarkdown} from 'mdast-util-to-markdown'
-import type {Options as MdastToMarkdownOptions} from 'mdast-util-to-markdown'
 import {toHast as mdastToHast} from 'mdast-util-to-hast'
-import type {Options as MdastToHastOptions} from 'mdast-util-to-hast'
 
-import {defListToMarkdown, defListFromMarkdown, mdastDefList2hast, mdastDefListTerm2hast, mdastDefListDescription2hast} from 'mdast-util-definition-list'
+import {defListToMarkdown, defListFromMarkdown, defListHastHandlers} from 'mdast-util-definition-list'
 import {definitionListHastToMdast} from 'hast-util-definition-list'
 
 import {xtableFromMarkdown, xtableToMarkdown} from 'mdast-util-xtable'
@@ -37,42 +33,11 @@ import {inlineMediaHastHandler, inlineMediaMdastHandler} from './extensions/inli
 
 import {defList} from 'micromark-extension-definition-list'
 
-import {emStrongToIB, iBToEmStrong} from './extensions/em-strong-swap-i-b'
 import {breakSpaces} from './extensions/break-spaces'
-import {mdastParagraphToHastBr, hastBrToMdastParagraph} from './extensions/paragraph-break-swap'
-import {hastToMdastCorrectList, mdastToHastCorrectList} from './extensions/correct-list'
-import { Text } from 'hast'
-import { hast_br_to_p } from './hast_br_to_p'
+import {hastToMdastListType, mdastToHastListType} from './extensions/list-type'
 import {li as tmp_li_bugfix} from './extensions/tmp-hast-to-mdast-li-bugfix'
+import {from_html as mutate_from_html, from_markdown as mutate_from_markdown} from './mutate_hast'
 
-const TABLE_STYLE = 'Tables'
-const NEWLINE = 'Table newline'
-const DEF_LIST = 'Definition lists'
-const INLINE_MEDIA = 'Inline media'
-const MARKDOWN = 'Markdown format'
-const EXTENSIONS = 'Markdown extensions'
-const UNDERLINE = "Underline"
-const SUPERSCRIPT = "Superscript"
-const SUBSCRIPT = "Subscript"
-const STRIKETHROUGH = "Strikethrough"
-declare type Options = {
-    [MARKDOWN]: MdastToMarkdownOptions
-    [EXTENSIONS]: object
-}
-declare type Configuration = {
-    mdast_to_markdown: {options: MdastToMarkdownOptions}
-    markdown_to_mdast: {options: MarkdownToMdastOptions}
-    mdast_to_hast: {
-        options: MdastToHastOptions,
-        hast_transform: (hast: HastElement) => void
-    }
-    hast_to_html: {options: HastToHtmlOptions}
-    html_to_hast: {options: HtmlToHastOptions}
-    hast_to_mdast: {
-        options: HastToMdastOptions
-        hast_transform: (hast: HastElement) => void
-    }
-}
 
 /**
  * NOTES REGARDING UNIFIED
@@ -111,12 +76,11 @@ function parse_cloze(str:string): number {
 // Convert HTML to markdown
 function html_to_markdown(html:string, cfg: Configuration): [string, number] {
     if (!html) return ['', 0]
-    const hast = hastFromHtml(html, cfg.html_to_hast.options)
-    hast_br_to_p(hast as any, {closeBeforeList: false, closeLast: false})
-    cfg.hast_to_mdast.hast_transform(hast as any)
-    const mdast = hastToMdast(hast, cfg.hast_to_mdast.options)
+    const hast = hastFromHtml(html, cfg.html_to_hast)
+    mutate_from_html(hast, cfg)
+    const mdast = hastToMdast(hast, cfg.hast_to_mdast)
     // Strip spec mdastToMarkdown eof newline
-    const md = mdastToMarkdown(mdast, cfg.mdast_to_markdown.options).slice(0, -1)
+    const md = mdastToMarkdown(mdast, cfg.mdast_to_markdown).slice(0, -1)
     return [md, parse_cloze(md)]
 }
 
@@ -125,10 +89,10 @@ function html_to_markdown(html:string, cfg: Configuration): [string, number] {
 function markdown_to_html(md: string, cfg: Configuration): string {
     if (!md) return ''
 
-    const mdast = markdownToMdast(md, 'utf-8', cfg.markdown_to_mdast.options)
-    const hast = <HastElement>mdastToHast(mdast, cfg.mdast_to_hast.options)
-    cfg.mdast_to_hast.hast_transform(hast)
-    let html = hastToHtml(hast, cfg.hast_to_html.options)
+    const mdast = markdownToMdast(md, 'utf-8', cfg.markdown_to_mdast)
+    const hast = <HastElement>mdastToHast(mdast, cfg.mdast_to_hast)
+    mutate_from_markdown(hast, cfg)
+    let html = hastToHtml(hast, cfg.hast_to_html)
 
     return html
 }
@@ -141,8 +105,8 @@ function markdown_to_html(md: string, cfg: Configuration): string {
 function init(options: Options): Configuration {
     const md_mdast_ext: any[] = []
     const md_mdast_mext: any[] = []
-    const mdast_hast_hdl: any[] = [emStrongToIB, mdastParagraphToHastBr, mdastToHastCorrectList]
-    const hast_mdast_hdl: any[] = [iBToEmStrong, hastBrToMdastParagraph, hastToMdastCorrectList]
+    const mdast_hast_hdl: any[] = [mdastToHastListType]
+    const hast_mdast_hdl: any[] = [hastToMdastListType, tmp_li_bugfix]
     const mdast_md_ext: any[] = []
 
     if (options[MARKDOWN]['hardBreak'] === "spaces")
@@ -150,8 +114,8 @@ function init(options: Options): Configuration {
 
     // Markdown extensions
     if (options[EXTENSIONS][DEF_LIST]) {
-        hast_mdast_hdl.push(definitionListHastToMdast.dl, definitionListHastToMdast.dt, definitionListHastToMdast.dd)
-        mdast_hast_hdl.push(mdastDefList2hast, mdastDefListTerm2hast, mdastDefListDescription2hast)
+        hast_mdast_hdl.push(definitionListHastToMdast)
+        mdast_hast_hdl.push(defListHastHandlers)
         mdast_md_ext.push(defListToMarkdown)
         md_mdast_ext.push(defList)
         md_mdast_mext.push(defListFromMarkdown)
@@ -172,50 +136,6 @@ function init(options: Options): Configuration {
         )
         md_mdast_mext.push(xtableFromMarkdown)
         mdast_md_ext.push(xtableToMarkdown())
-    }
-
-    // Table cell newlines
-    // Current mdast-util-to-hast implementation never calls table-cell handler
-    let mdast_hast_transform
-    let hast_mdast_transform
-    if (options[EXTENSIONS][TABLE_STYLE] !== 'none' && options[EXTENSIONS][NEWLINE]) {
-        const br: HastElement = {type: 'element', tagName: 'br', children: []}
-        mdast_hast_transform = function traverse(nd: HastNode, cell = false) {
-            const children = []
-            for (const child of nd['children']) {
-                if (child.type === 'text') {
-                    if (!child.position && child['value'] === '\n')
-                        continue
-                    const txts = child['value'].split(options[EXTENSIONS][NEWLINE])
-                    for (let i = 0; i < txts.length; i++) {
-                        children.push({type: 'text', value: txts[i]})
-                        if (i < (txts.length - 1)) children.push(br)
-                    }
-                } else {
-                    if (child.children && child.children.length)
-                        traverse(child, child.tagName === 'td' || child.tagName === 'th' || cell)
-                    children.push(child)
-                }
-            }
-            if (children.length)
-                nd['children'] = children
-        }
-        const nl: Text = {type: 'text', value: options[EXTENSIONS][NEWLINE]}
-        hast_mdast_transform = function traverse(nd: HastNode, cell = false) {
-            const children = []
-            for (let i = 0; i < children.length; i++) {
-                if (children[i].tagName === 'br') children[i] = nl
-                else for (const child of children[i].children)
-                    traverse(child, child.tagName === 'td' || child.tagName === 'th' || cell)
-            }
-        }
-    } else {
-        mdast_hast_transform = function (hast) {
-            return remove(hast, (nd) => {
-                return !nd.position && nd.type === 'text' && nd['value'] === '\n'
-            })
-        }
-        // hast_mdast_transform = undefined
     }
 
     // Inlines
@@ -245,49 +165,42 @@ function init(options: Options): Configuration {
 
 
     return {
+        options: {
+            [NEWLINE]: options[EXTENSIONS][NEWLINE]
+        },
         mdast_to_markdown: {
-            options: {
-                ...options[MARKDOWN],
-                extensions: mdast_md_ext
-            }
+            ...options[MARKDOWN],
+            extensions: mdast_md_ext
         },
         markdown_to_mdast: {
-            options: {
-                extensions: md_mdast_ext,
-                mdastExtensions: md_mdast_mext
-            }
+            extensions: md_mdast_ext,
+            mdastExtensions: md_mdast_mext
         },
         mdast_to_hast: {
-            options: {
-                handlers: flatten(mdast_hast_hdl),
-                allowDangerousHtml: true
-            },
-            hast_transform: mdast_hast_transform
+            handlers: flatten(mdast_hast_hdl),
+            allowDangerousHtml: true
         },
         html_to_hast: {
-            options: {
-                fragment: true
-            }
+            fragment: true
         },
         hast_to_html: {
-            options: {
-                allowDangerousHtml: true,
-                allowDangerousCharacters: true
-            }
+            allowDangerousHtml: true,
+            allowDangerousCharacters: true
         },
         hast_to_mdast: {
-            options: {
-                handlers: flatten(hast_mdast_hdl) as Record<string, HastToMdastHandle>
-            },
-            hast_transform: hast_mdast_transform
+            handlers: flatten(hast_mdast_hdl) as Record<string, HastToMdastHandle>
         }
     } as Configuration
 
     /** Flatten array of objects into one object */
-    function flatten(objects: object[]): object {
+    function flatten(itms: any[]): object {
         const res = {}
-        for (const obj of objects)
-            for (const [k, v] of Object.entries(obj)) res[k] = v
+        for (const itm of itms)  {
+            if (typeof itm === 'function')
+                res[itm.name] = itm
+            else if (typeof itm === 'object')
+                for (const [k, v] of Object.entries(itm)) res[k] = v
+        }
         return res
     }
 }
