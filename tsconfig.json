@@ -1,5 +1,5 @@
 {
-    "compilerOptions": { // Credit: https://github.com/kleinerpirat
+    "compilerOptions": {
         "module": "ESNext",
         "target": "es2018",
         "moduleResolution": "node",
@@ -9,13 +9,15 @@
         "baseUrl": ".",
         "allowSyntheticDefaultImports": true,
         "allowJs": true,
+        "checkJs": true,
         "strict": true,
         "noImplicitAny": false,
         "strictNullChecks": false,
         "forceConsistentCasingInFileNames": true,
-        "esModuleInterop": true
+        "esModuleInterop": true,
+        "outDir": "dist"
     },
-    "include": ["test.ts"],
+    "include": ["index.ts"],
     "exclude": [
       "node_modules"
     ],
@@ -24,5 +26,5 @@
       "files": true,
       "esm": true,
       "experimentalSpecifierResolution": "node"
-    },
+    }
 }
