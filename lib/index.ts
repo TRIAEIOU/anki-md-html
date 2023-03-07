@@ -22,9 +22,9 @@ import {gfmTable} from 'micromark-extension-gfm-table'
 import {gfmStrikethroughFromMarkdown, gfmStrikethroughToMarkdown} from 'mdast-util-gfm-strikethrough'
 import {gfmStrikethrough} from 'micromark-extension-gfm-strikethrough'
 // @ts-ignore
-import {attentionFromMarkdown, attentionToMarkdown} from 'mdast-util-attention'
+import {attentionFromMarkdown, attentionToMarkdown, attentionFromHast} from 'mdast-util-attention'
 // @ts-ignore
-import {attention, codes} from 'micromark-extension-attention'
+import {attention} from 'micromark-extension-attention'
 
 import {directive} from 'micromark-extension-directive'
 import {directiveFromMarkdown, directiveToMarkdown} from 'mdast-util-directive'
@@ -40,27 +40,121 @@ import {from_html as mutate_from_html, from_markdown as mutate_from_markdown} fr
 
 
 /**
- * NOTES REGARDING UNIFIED
- * Conversion MD → HTML:
- * 1. mdast-util-from-markdown
- *      - Parsing markdown: micromark syntax extension ("extension")
- *          mdast-hast-extension-inline-factory to generate inlines (depends on mdast-util-gfm-strikethrough#inline-factory)
- *      - Inserting in mdast: mdast-util-from-markdown mdastExtension ("extensionFromMarkdown")
- *      gfm+xtable, deflist, directive (video/audio)
- * 2. mdast-util-to-hast - use mdast handlers
- *      table-newline, emtostrongitalic, paragraptobreak, fixlist
- * 3. hast-util-to-html
- *
- * Conversion HTML → MD:
- * 1. hast-util-from-html
- * 2. hast-util-to-mdast - use hast handlers
- *      table-newline, strongitalictoem, brtoparagraph, fix-anki-nested-lists,
- * 3. mdast-util-to-markdown - use mdast extensions
- *     gfm+xtable, deflist, directive (video/audio), linebreak-spaces
+ * NOTES
+ * 
+ * CYCLE
+ * md → mdast: mdast-util-from-markdown
+ * mdast → hast: mdast-util-to-hast
+ * mutate_hast.from_markdown
+ * hast → html: hast-util-to-html
+ * html → hast: hast-util-from-html
+ * mutate_hast.from_html
+ * hast → mdast: mdast-util-from-hast
+ * mdast → md: mdast-util-to-markdown
+ * 
+ * HAST MANIPULATIONS
+ * Direct hast manipulations rather than extensions - mutate_hast.from_html/from_markdown
+ * Run on hast before converting to mdast or HTML.
+ * - Remove `\n` between html tags
+ * - Replace `<br><br>` with `<p>` from HTML and vice versa
+ * - Replace `<i>/<b>` with `<em>/<strong>` from HTML and vice versa
+ * - Correct Anki's behaviour of inserting nested lists _outside_ `<li>` (from_html only)
+ * - Correct headless table output (from_markdown only)
+ * - Replace `<br>` in tables with `symbol` and vice versa (depending on config)
+ * 
+ * EXTENSIONS 
+ * gfmStrikethrough
+ * gfmTable
+ * attention: super/subscript, underline (based on gfmStrikethrough)
+ * xTable: headless & GFM tables (based on gfmTable)
+ * defintionList
+ * inlineMedia - support TRIAEIOU inline media, depends on directive extension
+ * breakSpaces - render hardbreak as `  \n` instead of `\\\n`
+ * listType - add markdown-tight/loose class to HTML and respect in reverse
+ * tmp_li_bugfix - fix li spread calculation (minor fix in hast-util-to-mdastli.js)
+ * 
+ * MD → MDAST
+ * breakSpaces: none
+ * tmp_li_bugfix: none
+ * mdast-util-from-markdown.fromMarkdown.options.extensions - syntax:
+ *   gfmStrikethrough: micromark-extension-gfm-strikethrough.gfmStrikethrough()
+ *   gfmTable: micromark-extension-gfm-table.gfmTable
+ *   attention: micromark-extension-gfm-strikethrough#attention.attention()
+ *   xtable: micromark-extension-gfm-table#xtable.xtable
+ *   defList: micromark-extension-definition-list.defList
+ *   inlineMedia: micromark-extension-directive.directive()
+ * 
+ * mdast-util-from-markdown.fromMarkdown.options.mdastExtensions - mdast insertion:
+ *   gfmStrikethrough: mdast-util-gfm-strikethrough.gfmStrikethroughFromMarkdown
+ *   gfmTable: mdast-util-gfm-table#xtable.xtableFromMarkdown ← both xtable & gfm
+ *   attention: mdast-util-gfm-strikethrough#attention.attentionFromMarkdown()
+ *   xtable: mdast-util-gfm-table#xtable.xtableFromMarkdown
+ *   defList: mdast-util-definition-list#phrasing-description-handler.defListFromMarkdown
+ *   inlineMedia: mdast-util-directive.directiveFromMarkdown
+ * 
+ * MDAST → HAST
+ * gfmStrikethrough: none (hardcoded)
+ * gfmTable: none (hardcoded)
+ * attention: none (solved with tag names in mdast)
+ * xtable: none
+ * breakSpaces: none
+ * tmp_li_bugfix: none
+ * mdast-util-to-hast.toHast.options.handlers - hast node insertion:
+ *   defList: mdast-util-defintion-list#phrasing-description-handler.defListHastHandlers
+ *   inlineMedia: ./extensions/inline-media.inlineMediaMdastHandler
+ *   listType: ./extensions/list-type.mdastToHastListType
+ * 
+ * AFTER MDAST → HAST
+ * mutate_hast.from_markdown
+ *  
+ * HAST → HTML
+ * gfmStrikethrough: none
+ * gfmTable: none
+ * attention: none
+ * xtable: none
+ * defList: none
+ * breakSpaces: none
+ * tmp_li_bugfix: none
+ * 
+ * HTML → HAST
+ * gfmStrikethrough: none
+ * gfmTable: none
+ * attention: none
+ * xtable: none
+ * defList: none
+ * breakSpaces: none
+ * tmp_li_bugfix: none
+ * 
+ * AFTER HTML → HAST
+ * mutate_hast.from_html
+ * 
+ * HAST → MDAST
+ * gfmStrikethrough: none (hardcoded)
+ * gfmTable: none (hardcoded)
+ * xtable: none
+ * breakSpaces: none
+ * hast-util-to-mdast.toMdast.options.handlers - mdast node insertion:
+ *   attention: mdast-util-gfm-strikethrough#attention.attentionFromHast
+ *   defList: hast-util-definition-list#phrasing-description-handler.definitionListHastToMdast
+ *   inlineMedia: ./extensions/inline-media.inlineMediaHastHandler
+ *   listType: ./extensions/list-type.hastToMdastListType
+ *   tmp_li_bugfix: ./extensions/tmp-hast-to-mdast-li-bugfix.li
+ * 
+ * MDAST → MD
+ * tmp_li_bugfix: none
+ * mdast-util-to-markdown.toMarkdown.options.extensions - render mdast nodes:
+ *   gfmStrikethrough: mdast-util-gfm-strikethrough.gfmStrikethroughToMarkdown
+ *   gfmTable: mdast-util-gfm-table#xtable.xtableToMarkdown ← both xtable & gfm
+ *   attention: mdast-util-gfm-strikethrough#attention.attentionToMarkdown()
+ *   xtable: mdast-util-gfm-table#xtable.xtableToMarkdown()
+ *   defList: mdast-util-defintion-list#phrasing-description-handler.defListToMarkdown
+ *   inlineMedia: mdast-util-directive.directiveToMarkdown
+ *   breakSpaces: ./extensions/break-spaces.breakSpaces
+ * 
  */
 
 /////////////////////////////////////////////////////////////////////////////
-// Parse out current cloze ordinal from string, 0 if none (i.e. increment one for next)
+/** Parse out current cloze ordinal from string, 0 if none (i.e. increment one for next) */
 const CLOZE_ORD_RE = new RegExp(String.raw`{{c(\d+)::`, 'g')
 function parse_cloze(str:string): number {
     let ord: number = 0
@@ -73,7 +167,7 @@ function parse_cloze(str:string): number {
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Convert HTML to markdown
+/** Convert HTML to markdown */
 function html_to_markdown(html:string, cfg: Configuration): [string, number] {
     if (!html) return ['', 0]
     const hast = hastFromHtml(html, cfg.html_to_hast)
@@ -85,7 +179,7 @@ function html_to_markdown(html:string, cfg: Configuration): [string, number] {
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Convert markdown to HTML
+/** Convert markdown to HTML */
 function markdown_to_html(md: string, cfg: Configuration): string {
     if (!md) return ''
 
@@ -97,6 +191,7 @@ function markdown_to_html(md: string, cfg: Configuration): string {
     return html
 }
 
+/////////////////////////////////////////////////////////////////////////////
 /**
  * Initialize configuration for use with mardown_to_html/html_to_markdown
  * @param {Options} options
@@ -140,27 +235,30 @@ function init(options: Options): Configuration {
 
     // Inlines
     if (options[EXTENSIONS][UNDERLINE]) {
-        const tmp = {mdastNodeName: 'underline', hastNodeName: 'u', code: codes.underscore}
+        const tmp = {mdastNodeName: 'underline', hastNodeName: 'u', char: '_'}
         md_mdast_ext.push(attention(tmp))
         md_mdast_mext.push(attentionFromMarkdown(tmp))
         mdast_md_ext.push(attentionToMarkdown(tmp))
+        hast_mdast_hdl.push(attentionFromHast(tmp))
     }
     if (options[EXTENSIONS][SUPERSCRIPT]) {
-        const tmp = {mdastNodeName: 'superscript', hastNodeName: 'sup', code: codes.caret}
+        const tmp = {mdastNodeName: 'superscript', hastNodeName: 'sup', char: '^'}
         md_mdast_ext.push(attention(tmp))
         md_mdast_mext.push(attentionFromMarkdown(tmp))
         mdast_md_ext.push(attentionToMarkdown(tmp))
+        hast_mdast_hdl.push(attentionFromHast(tmp))
     }
     if (options[EXTENSIONS][SUBSCRIPT]) {
-        const tmp = {mdastNodeName: 'subscript', hastNodeName: 'sub', code: codes.tilde}
+        const tmp = {mdastNodeName: 'subscript', hastNodeName: 'sub', char: '~'}
         md_mdast_ext.push(attention(tmp))
         md_mdast_mext.push(attentionFromMarkdown(tmp))
         mdast_md_ext.push(attentionToMarkdown(tmp))
+        hast_mdast_hdl.push(attentionFromHast(tmp))
     }
     if (options[EXTENSIONS][STRIKETHROUGH]) {
-        md_mdast_ext.push(gfmStrikethroughFromMarkdown)
-        md_mdast_mext.push(gfmStrikethrough({singleTilde: options[EXTENSIONS][STRIKETHROUGH] !== 'double'}))
-        mdast_md_ext.push(attentionToMarkdown(gfmStrikethroughToMarkdown))
+        md_mdast_ext.push(gfmStrikethrough({singleTilde: options[EXTENSIONS][STRIKETHROUGH] !== 'double'}))
+        md_mdast_mext.push(gfmStrikethroughFromMarkdown)
+        mdast_md_ext.push(gfmStrikethroughToMarkdown)
     }
 
 
@@ -205,5 +303,5 @@ function init(options: Options): Configuration {
     }
 }
 
-export {html_to_markdown, markdown_to_html, init, codes}
+export {html_to_markdown, markdown_to_html, init}
 export type {Configuration, Options}

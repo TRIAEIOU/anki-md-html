@@ -6,6 +6,7 @@
  * - Replace `<br><br>` with `<p>` from HTML and vice versa
  * - Replace `<i>/<b>` with `<em>/<strong>` from HTML and vice versa
  * - Correct Anki's behaviour of inserting nested lists _outside_ `<li>` (from_html only)
+ * - Correct headless table output (from_markdown only)
  * - Replace `<br>` in tables with `symbol` and vice versa (depending on config)
  */
 
@@ -17,8 +18,9 @@ import {phrasing} from "hast-util-phrasing"
 /** Mutate hast generated from HTML before conversion to mdast/markdown */
 function from_html(hast: Node, cfg: Configuration) {
   mutate(hast, {
-    table_nl: cfg.options['table_nl'],
+    table_nl: cfg.options[NEWLINE],
     table: 0,
+    headless: 0,
     list: 0,
     heading: 0
   })
@@ -63,7 +65,7 @@ function from_html(hast: Node, cfg: Configuration) {
         }
       }
 
-      // non-phrasing
+      // blocks
       else {
         flush_para()
 
@@ -95,6 +97,7 @@ function from_html(hast: Node, cfg: Configuration) {
 
       // p wrap everywhere except: in lists w/o two <br>'s; in tables or headings
       if (
+        !phrasing(node) &&
         !state['table'] &&
         !state['heading'] &&
         ( // lists are special, to have text after a nested list in the same li
@@ -133,68 +136,98 @@ function from_markdown(hast: Node, cfg: Configuration) {
   const br = {type: 'element', tagName: 'br'}
   mutate(hast, {
     table_nl: cfg.options[NEWLINE],
-    table: 0
+    table: 0,
+    list: 0,
+    headless: 0
   })
 
   function mutate(node: Node, state: {}) {
-    const result: Node[] = []
-    if (node['tagName'] === 'table') state['table']++
+    if (!node['children']?.length) return node
+    update_state(true)
 
     // Mutate children
-    if (node['children']) {
-      let paragraph = false // previous was paragraph, <br><br> may be needed
+    const result: Node[] = []
+    let prv // preceding child or undef
 
-      // Direct children
-      for (const child of node['children']) {
-        const tag = child['tagName']
+    // Direct children
+    let i = -1
+    for (const child of node['children']) {
+      i++
+      // discard null child and "html prettify newlines"
+      if (!child || !child.position && child.type === 'text' && child['value'] === '\n') {
+        continue
+      }
+      const tag = child['tagName']
 
-        // discard "HTML pretty newlines"
-        if (!child.position && child.type === 'text' && child['value'] === '\n') {
-          continue
-        }
-        // we have a pending paragraph separation, insert only if phrasing/new p
-        else if (paragraph) {
-          if (phrasing(child) || tag === 'p') result.push(br,br)
-          paragraph = undefined
-        }
-
-        /////////////////////////// new if-else block
-
-        // replace newlines in table cells
+      // phrasing
+      if (phrasing(child)) {
         if (state['table'] && child.type === 'text' && child.value.includes(state['table_nl'])) {
-          let i = 0
           const txts = child.value.split(new RegExp(`(?<!\\\\)[${state['table_nl']}]`))
+          let n = 0
           for (const txt of txts) {
             if (txt) result.push({type: 'text', value: txt} as any)
-            if (i++ < txts.length - 1) result.push(br)
+            if (n++ < txts.length - 1) result.push(br)
+          }
+        } else {
+          // replace i/b with em/strong
+          if (tag === 'em') child['tagName'] = 'i'
+          else if (tag === 'strong') child['tagName'] = 'b'
+
+          result.push(mutate(child, state))
+        }
+      }
+      
+      // blocks
+      else {
+        // paragraph, preced with <br><br> as needed
+        if (tag === 'p') {
+          if (prv && (prv['tagName'] === 'p' || prv.type === 'text'))
+            result.push(br, br)
+          result.push(...mutate(child, state)['children'])
+        }
+
+        // Fix headless tables
+        else if (state['headless']) {
+          // Move thead rows to tbody, they will be handled there
+          if (tag === 'thead') {
+            let n = i + 1
+            while (node['children'][n]['tagName'] !== 'tbody') n++
+            node['children'][n]['children'].unshift(...child['children'])
+          } else {
+            // Convert any th to td
+            if (tag === 'th') child['tagName'] = 'td'
+            result.push(mutate(child, state))
           }
         }
         
-        // replace i/b with em/strong
-        else if (tag === 'em') {
-          child['tagName'] = 'i'
-          result.push(mutate(child, state))
-        } else if (tag === 'strong') {
-          child['tagName'] = 'b'
-          result.push(mutate(child, state))
-        }
-
-        // replace <p> with <br><br>, actual brs input depending on next block
-        else if (tag === 'p') {
-          result.push(...mutate(child, state)['children'])
-          paragraph = true
-        }
-
-        // push non-managed
+        // non-para, push to result
         else {
           result.push(mutate(child, state))
         }
       }
 
-      node['children'] = result
+      prv = child
     }
-    if (node['tagName'] === 'table') state['table']--
+
+    node['children'] = result
+    // ugly here but clear table headless property
+    if (node['tagName'] === 'table' && node['properties']['headless'])
+      delete node['properties']['headless']
+    update_state(false)
     return node
+
+    /** Incr/decr counters of block levels */
+    function update_state(increment: boolean) {
+      if (node['tagName'] === 'table') {
+        increment ? state['table']++ : state['table']--
+        if (node['properties']['headless'])
+          increment ? state['headless']++ : state['headless']--
+      }
+      else if (['ul', 'ol'].includes(node['tagName']))
+        increment ? state['list']++ : state['list']--
+      else if(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(node['tagName']))
+        increment ? state['heading']++ : state['heading']--
+    }
   }
 }
 
