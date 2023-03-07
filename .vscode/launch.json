@@ -10,7 +10,7 @@
             "smartStep": true,
             "sourceMaps": true,
             "args": [
-                "${workspaceRoot}/test.ts"
+                "${workspaceRoot}/test/index.ts"
             ],
             "runtimeArgs": [
                 // "--files"		-- Don't use => Use environment variable TS_NODE_FILES instead
