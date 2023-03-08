@@ -1,6 +1,3 @@
-import type {Options, Configuration} from './constants'
-import {TABLE_STYLE, NEWLINE, DEF_LIST, INLINE_MEDIA, MARKDOWN, EXTENSIONS, UNDERLINE, SUPERSCRIPT, SUBSCRIPT, STRIKETHROUGH} from './constants'
-
 import type {Element as HastElement} from 'hast'
 import {fromHtml as hastFromHtml} from 'hast-util-from-html'
 import {toHtml as hastToHtml} from 'hast-util-to-html'
@@ -10,6 +7,7 @@ import type {Handle as HastToMdastHandle} from 'hast-util-to-mdast'
 import {fromMarkdown as markdownToMdast} from 'mdast-util-from-markdown'
 import {toMarkdown as mdastToMarkdown} from 'mdast-util-to-markdown'
 import {toHast as mdastToHast} from 'mdast-util-to-hast'
+import type {Options as MdastToMarkdownOptions} from 'mdast-util-to-markdown'
 
 import {defListToMarkdown, defListFromMarkdown, defListHastHandlers} from 'mdast-util-definition-list'
 import {definitionListHastToMdast} from 'hast-util-definition-list'
@@ -36,8 +34,9 @@ import {defList} from 'micromark-extension-definition-list'
 import {breakSpaces} from './extensions/break-spaces'
 import {hastToMdastListType, mdastToHastListType} from './extensions/list-type'
 import {li as tmp_li_bugfix} from './extensions/tmp-hast-to-mdast-li-bugfix'
-import {from_html as mutate_from_html, from_markdown as mutate_from_markdown} from './mutate_hast'
 
+import type {Node} from "hast"
+import {phrasing} from "hast-util-phrasing"
 
 /**
  * NOTES
@@ -153,142 +152,101 @@ import {from_html as mutate_from_html, from_markdown as mutate_from_markdown} fr
  * 
  */
 
-/////////////////////////////////////////////////////////////////////////////
-/** Parse out current cloze ordinal from string, 0 if none (i.e. increment one for next) */
-const CLOZE_ORD_RE = new RegExp(String.raw`{{c(\d+)::`, 'g')
-function parse_cloze(str:string): number {
-    let ord: number = 0
-    let match: RegExpExecArray | null
-    while ((match = CLOZE_ORD_RE.exec(str)) !== null) {
-        const o = parseInt(match[1])
-        if (o > ord) ord = o
-    }
-    return ord
+
+const TABLE_STYLE = 'Tables'
+const NEWLINE = 'Table newline'
+const DEF_LIST = 'Definition lists'
+const INLINE_MEDIA = 'Inline media'
+const MARKDOWN = 'Markdown format'
+const EXTENSIONS = 'Markdown extensions'
+const UNDERLINE = "Underline"
+const SUPERSCRIPT = "Superscript"
+const SUBSCRIPT = "Subscript"
+const STRIKETHROUGH = "Strikethrough"
+
+interface Options {
+  [MARKDOWN]: MdastToMarkdownOptions
+  [EXTENSIONS]: object
 }
+class Converter {
+  
+  /////////////////////////////////////////////////////////////////////////////
+  /** Properties */
+  options = {[NEWLINE]: ""}
+  mdast_to_markdown = {options: {}, extensions: []}
+  markdown_to_mdast = {extensions: [], mdastExtensions: []}
+  mdast_to_hast = {handlers: {} as Record<string, HastToMdastHandle>, allowDangerousHtml: true}
+  html_to_hast = {fragment: true}
+  hast_to_html = {allowDangerousHtml: true, allowDangerousCharacters: true}
+  hast_to_mdast = {handlers: {} as Record<string, HastToMdastHandle>}
 
-/////////////////////////////////////////////////////////////////////////////
-/** Convert HTML to markdown */
-function html_to_markdown(html:string, cfg: Configuration): [string, number] {
-    if (!html) return ['', 0]
-    const hast = hastFromHtml(html, cfg.html_to_hast)
-    mutate_from_html(hast, cfg)
-    const mdast = hastToMdast(hast, cfg.hast_to_mdast)
-    // Strip spec mdastToMarkdown eof newline
-    const md = mdastToMarkdown(mdast, cfg.mdast_to_markdown).slice(0, -1)
-    return [md, parse_cloze(md)]
-}
-
-/////////////////////////////////////////////////////////////////////////////
-/** Convert markdown to HTML */
-function markdown_to_html(md: string, cfg: Configuration): string {
-    if (!md) return ''
-
-    const mdast = markdownToMdast(md, 'utf-8', cfg.markdown_to_mdast)
-    const hast = <HastElement>mdastToHast(mdast, cfg.mdast_to_hast)
-    mutate_from_markdown(hast, cfg)
-    let html = hastToHtml(hast, cfg.hast_to_html)
-
-    return html
-}
-
-/////////////////////////////////////////////////////////////////////////////
-/**
- * Initialize configuration for use with mardown_to_html/html_to_markdown
- * @param {Options} options
- * @returns configuration
- */
-function init(options: Options): Configuration {
-    const md_mdast_ext: any[] = []
-    const md_mdast_mext: any[] = []
+  /////////////////////////////////////////////////////////////////////////////
+  /** Initialize configuration for use with mardown_to_html/html_to_markdown */
+  constructor (options: Options) {
     const mdast_hast_hdl: any[] = [mdastToHastListType]
     const hast_mdast_hdl: any[] = [hastToMdastListType, tmp_li_bugfix]
-    const mdast_md_ext: any[] = []
 
     if (options[MARKDOWN]['hardBreak'] === "spaces")
-        mdast_md_ext.push(breakSpaces)
+        this.mdast_to_markdown.extensions.push(breakSpaces)
 
     // Markdown extensions
     if (options[EXTENSIONS][DEF_LIST]) {
         hast_mdast_hdl.push(definitionListHastToMdast)
         mdast_hast_hdl.push(defListHastHandlers)
-        mdast_md_ext.push(defListToMarkdown)
-        md_mdast_ext.push(defList)
-        md_mdast_mext.push(defListFromMarkdown)
+        this.mdast_to_markdown.extensions.push(defListToMarkdown)
+        this.markdown_to_mdast.extensions.push(defList)
+        this.markdown_to_mdast.mdastExtensions.push(defListFromMarkdown)
     }
     if (options[EXTENSIONS][INLINE_MEDIA]) {
         hast_mdast_hdl.push(inlineMediaHastHandler)
         mdast_hast_hdl.push(inlineMediaMdastHandler)
-        mdast_md_ext.push(directiveToMarkdown)
-        md_mdast_ext.push(directive())
-        md_mdast_mext.push(directiveFromMarkdown)
+        this.mdast_to_markdown.extensions.push(directiveToMarkdown)
+        this.markdown_to_mdast.extensions.push(directive())
+        this.markdown_to_mdast.mdastExtensions.push(directiveFromMarkdown)
     }
 
     // Tables
     if (options[EXTENSIONS][TABLE_STYLE] !== 'none') {
-        md_mdast_ext.push(options[EXTENSIONS][TABLE_STYLE] === 'extended'
+        this.markdown_to_mdast.extensions.push(options[EXTENSIONS][TABLE_STYLE] === 'extended'
             ? xtable
             : gfmTable
         )
-        md_mdast_mext.push(xtableFromMarkdown)
-        mdast_md_ext.push(xtableToMarkdown())
+        this.markdown_to_mdast.mdastExtensions.push(xtableFromMarkdown)
+        this.mdast_to_markdown.extensions.push(xtableToMarkdown())
     }
 
     // Inlines
     if (options[EXTENSIONS][UNDERLINE]) {
         const tmp = {mdastNodeName: 'underline', hastNodeName: 'u', char: '_'}
-        md_mdast_ext.push(attention(tmp))
-        md_mdast_mext.push(attentionFromMarkdown(tmp))
-        mdast_md_ext.push(attentionToMarkdown(tmp))
+        this.markdown_to_mdast.extensions.push(attention(tmp))
+        this.markdown_to_mdast.mdastExtensions.push(attentionFromMarkdown(tmp))
+        this.mdast_to_markdown.extensions.push(attentionToMarkdown(tmp))
         hast_mdast_hdl.push(attentionFromHast(tmp))
     }
     if (options[EXTENSIONS][SUPERSCRIPT]) {
         const tmp = {mdastNodeName: 'superscript', hastNodeName: 'sup', char: '^'}
-        md_mdast_ext.push(attention(tmp))
-        md_mdast_mext.push(attentionFromMarkdown(tmp))
-        mdast_md_ext.push(attentionToMarkdown(tmp))
+        this.markdown_to_mdast.extensions.push(attention(tmp))
+        this.markdown_to_mdast.mdastExtensions.push(attentionFromMarkdown(tmp))
+        this.mdast_to_markdown.extensions.push(attentionToMarkdown(tmp))
         hast_mdast_hdl.push(attentionFromHast(tmp))
     }
     if (options[EXTENSIONS][SUBSCRIPT]) {
         const tmp = {mdastNodeName: 'subscript', hastNodeName: 'sub', char: '~'}
-        md_mdast_ext.push(attention(tmp))
-        md_mdast_mext.push(attentionFromMarkdown(tmp))
-        mdast_md_ext.push(attentionToMarkdown(tmp))
+        this.markdown_to_mdast.extensions.push(attention(tmp))
+        this.markdown_to_mdast.mdastExtensions.push(attentionFromMarkdown(tmp))
+        this.mdast_to_markdown.extensions.push(attentionToMarkdown(tmp))
         hast_mdast_hdl.push(attentionFromHast(tmp))
     }
     if (options[EXTENSIONS][STRIKETHROUGH]) {
-        md_mdast_ext.push(gfmStrikethrough({singleTilde: options[EXTENSIONS][STRIKETHROUGH] !== 'double'}))
-        md_mdast_mext.push(gfmStrikethroughFromMarkdown)
-        mdast_md_ext.push(gfmStrikethroughToMarkdown)
+        this.markdown_to_mdast.extensions.push(gfmStrikethrough({singleTilde: options[EXTENSIONS][STRIKETHROUGH] !== 'double'}))
+        this.markdown_to_mdast.mdastExtensions.push(gfmStrikethroughFromMarkdown)
+        this.mdast_to_markdown.extensions.push(gfmStrikethroughToMarkdown)
     }
 
-
-    return {
-        options: {
-            [NEWLINE]: options[EXTENSIONS][NEWLINE]
-        },
-        mdast_to_markdown: {
-            ...options[MARKDOWN],
-            extensions: mdast_md_ext
-        },
-        markdown_to_mdast: {
-            extensions: md_mdast_ext,
-            mdastExtensions: md_mdast_mext
-        },
-        mdast_to_hast: {
-            handlers: flatten(mdast_hast_hdl),
-            allowDangerousHtml: true
-        },
-        html_to_hast: {
-            fragment: true
-        },
-        hast_to_html: {
-            allowDangerousHtml: true,
-            allowDangerousCharacters: true
-        },
-        hast_to_mdast: {
-            handlers: flatten(hast_mdast_hdl) as Record<string, HastToMdastHandle>
-        }
-    } as Configuration
+    this.options[NEWLINE] = options[EXTENSIONS][NEWLINE]
+    Object.assign(this.mdast_to_markdown, options[MARKDOWN])
+    this.mdast_to_hast.handlers = flatten(mdast_hast_hdl) as any
+    this.hast_to_mdast.handlers = flatten(hast_mdast_hdl) as any
 
     /** Flatten array of objects into one object */
     function flatten(itms: any[]): object {
@@ -301,7 +259,278 @@ function init(options: Options): Configuration {
         }
         return res
     }
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+  /** Convert HTML to markdown */
+  html_to_markdown(html:string): [string, number] {
+    if (!html) return ['', 0]
+    const hast = hastFromHtml(html, this.html_to_hast)
+    this.mutate_from_html(hast)
+    const mdast = hastToMdast(hast, this.hast_to_mdast)
+    // Strip spec mdastToMarkdown eof newline
+    const md = mdastToMarkdown(mdast, this.mdast_to_markdown).slice(0, -1)
+    return [md, this.parse_cloze(md)]
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+  /** Convert markdown to HTML */
+  markdown_to_html(md: string): string {
+    if (!md) return ''
+
+    const mdast = markdownToMdast(md, 'utf-8', this.markdown_to_mdast)
+    const hast = <HastElement>mdastToHast(mdast, this.mdast_to_hast as any)
+    this.mutate_from_markdown(hast)
+    let html = hastToHtml(hast, this.hast_to_html)
+
+    return html
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+  /** Parse out current cloze ordinal from string, 0 if none (i.e. increment one for next) */
+  CLOZE_ORD_RE = new RegExp(String.raw`{{c(\d+)::`, 'g')
+  parse_cloze(str:string): number {
+      let ord: number = 0
+      let match: RegExpExecArray | null
+      while ((match = this.CLOZE_ORD_RE.exec(str)) !== null) {
+          const o = parseInt(match[1])
+          if (o > ord) ord = o
+      }
+      return ord
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+  /**
+   * MUTATE HAST
+   * Run on hast before converting to mdast or HTML.
+   * Issues that need to be addressed:
+   * - Remove `\n` between html tags
+   * - Replace `<br><br>` with `<p>` from HTML and vice versa
+   * - Replace `<i>/<b>` with `<em>/<strong>` from HTML and vice versa
+   * - Correct Anki's behaviour of inserting nested lists _outside_ `<li>` (from_html only)
+   * - Correct headless table output (from_markdown only)
+   * - Replace `<br>` in tables with `symbol` and vice versa (depending on config)
+   */
+
+
+  /////////////////////////////////////////////////////////////////////////////
+  /** Mutate hast generated from HTML before conversion to mdast/markdown */
+  mutate_from_html(hast: Node) {
+      mutate(hast, {
+        table_nl: this.options[NEWLINE],
+        table: 0,
+        headless: 0,
+        list: 0,
+        heading: 0
+    })
+
+    /** Recursion function to mutate a nodes children */
+    function mutate(node: Node, state: {}) {
+      if (!node['children']?.length) return node
+      update_state(true)
+
+      // Mutate children
+      const result: Node[] = []
+      let para: Node[] = []
+      let brs = 0 // number of sequential <br>'s seen
+
+      for (const child of node['children']) {
+        // discard null child and "html prettify newlines"
+        if (!child || !child.position && child.type === 'text' && child['value'] === '\n') {
+          continue
+        }
+        const tag = child['tagName']
+
+        // phrasing
+        if (phrasing(child)) {
+          // keep building para until after 2+ brs
+          if (tag !== 'br' && brs > 1) flush_para()
+
+          // handle <br> including newline replacement in tables
+          if (tag === 'br') {
+            if (state['table'] && state['table_nl']) {
+              para.push({type: 'text', value: state['table_nl']} as any)
+            } else {
+              para.push(child)
+              brs++
+            }
+          } else {
+            brs = 0 // reset sequential <br> counter
+            // replace i/b with em/strong
+            if (tag === 'i') child['tagName'] = 'em'
+            else if (tag === 'b') child['tagName'] = 'strong'
+
+            para.push(mutate(child, state))
+          }
+        }
+
+        // blocks
+        else {
+          flush_para()
+
+          // Move nested lists inside preceding li
+          if (
+            ['ul', 'ol'].includes(tag) &&
+            result[result.length - 1]?.['tagName'] === 'li'
+          ) {
+            result[result.length - 1]['children'].push(mutate(child, state))
+          }
+
+          // unhandled, push to result
+          else {
+            result.push(mutate(child, state))
+          }
+        }
+      }
+      // trailing paragraph
+      flush_para()
+      node['children'] = result
+
+      update_state(false)
+      return node
+
+      /** Flush paragraph buffer to result, wrapping in <p> as required */
+      function flush_para() {
+        if (!para.length) return
+        const para_ = brs ? para.slice(0, -brs) : para
+
+        // p wrap everywhere except: in lists w/o two <br>'s; in tables or headings
+        if (
+          !phrasing(node) &&
+          !state['table'] &&
+          !state['heading'] &&
+          ( // lists are special, to have text after a nested list in the same li
+            // the outer list has to be loose in markdown, so do the reverse here (p wrap)
+            !state['list'] ||
+            brs > 1 ||
+            ['ul', 'ol'].includes(result[result.length - 1]?.['tagName'])
+          )
+        )
+          result.push({
+            type: 'element',
+            tagName: 'p',
+            children: para_
+          } as any)
+        else result.push(...para_)
+
+        para = []
+        brs = 0
+      }
+
+      /** Incr/decr counters of block levels */
+      function update_state(increment: boolean) {
+        if (node['tagName'] === 'table')
+          increment ? state['table']++ : state['table']--
+        else if (['ul', 'ol'].includes(node['tagName']))
+          increment ? state['list']++ : state['list']--
+        else if(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(node['tagName']))
+          increment ? state['heading']++ : state['heading']--
+      }
+    }
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+  /** Mutate hast generated from markdown/mdast before conversion to HTML */
+  mutate_from_markdown(hast: Node) {
+    const br = {type: 'element', tagName: 'br'}
+    mutate(hast, {
+      table_nl: this.options[NEWLINE],
+      table: 0,
+      list: 0,
+      headless: 0
+    })
+
+    function mutate(node: Node, state: {}) {
+      if (!node['children']?.length) return node
+      update_state(true)
+
+      // Mutate children
+      const result: Node[] = []
+      let prv // preceding child or undef
+
+      // Direct children
+      let i = -1
+      for (const child of node['children']) {
+        i++
+        // discard null child and "html prettify newlines"
+        if (!child || !child.position && child.type === 'text' && child['value'] === '\n') {
+          continue
+        }
+        const tag = child['tagName']
+
+        // phrasing
+        if (phrasing(child)) {
+          if (state['table'] && child.type === 'text' && child.value.includes(state['table_nl'])) {
+            const txts = child.value.split(new RegExp(`(?<!\\\\)[${state['table_nl']}]`))
+            let n = 0
+            for (const txt of txts) {
+              if (txt) result.push({type: 'text', value: txt} as any)
+              if (n++ < txts.length - 1) result.push(br)
+            }
+          } else {
+            // replace i/b with em/strong
+            if (tag === 'em') child['tagName'] = 'i'
+            else if (tag === 'strong') child['tagName'] = 'b'
+
+            result.push(mutate(child, state))
+          }
+        }
+        
+        // blocks
+        else {
+          // paragraph, preced with <br><br> as needed
+          if (tag === 'p') {
+            if (prv && (prv['tagName'] === 'p' || prv.type === 'text'))
+              result.push(br, br)
+            result.push(...mutate(child, state)['children'])
+          }
+
+          // Fix headless tables
+          else if (state['headless']) {
+            // Move thead rows to tbody, they will be handled there
+            if (tag === 'thead') {
+              let n = i + 1
+              while (node['children'][n]['tagName'] !== 'tbody') n++
+              node['children'][n]['children'].unshift(...child['children'])
+            } else {
+              // Convert any th to td
+              if (tag === 'th') child['tagName'] = 'td'
+              result.push(mutate(child, state))
+            }
+          }
+          
+          // non-para, push to result
+          else {
+            result.push(mutate(child, state))
+          }
+        }
+
+        prv = child
+      }
+
+      node['children'] = result
+      // ugly here but clear table headless property
+      if (node['tagName'] === 'table' && node['properties']['headless'])
+        delete node['properties']['headless']
+      update_state(false)
+      return node
+
+      /** Incr/decr counters of block levels */
+      function update_state(increment: boolean) {
+        if (node['tagName'] === 'table') {
+          increment ? state['table']++ : state['table']--
+          if (node['properties']['headless'])
+            increment ? state['headless']++ : state['headless']--
+        }
+        else if (['ul', 'ol'].includes(node['tagName']))
+          increment ? state['list']++ : state['list']--
+        else if(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(node['tagName']))
+          increment ? state['heading']++ : state['heading']--
+      }
+    }
+  }
+
 }
 
-export {html_to_markdown, markdown_to_html, init}
-export type {Configuration, Options}
+export {Converter}
+export type {Options}

@@ -1,6 +1,5 @@
 import test from 'tape'
-import {html_to_markdown, markdown_to_html, init} from '../lib'
-import type { Configuration } from '../lib'
+import {Converter, Options} from '../lib'
 export {}
 // Constants for readability
 const DEFAULT_CFG = {
@@ -22,7 +21,7 @@ const DEFAULT_CFG = {
     "Subscript": true,
     "Strikethrough": "double"
   }
-}
+} as Options
 
 const tests = [
 [
@@ -182,17 +181,17 @@ const CPX_HTML =
 '<h2>Ok</h2>Paragraph with breaking newline -><br>&#x3C;-<br><br>Unordered list:<ul class="markdown-tight"><li>One</li><li>Two</li></ul>Ordered list:<ol class="markdown-tight"><li>One</li><li>Two</li></ol>Nested list:<ul class="markdown-tight"><li>One<ul class="markdown-tight"><li>Alpha</li><li>Bravo</li></ul></li><li>Two</li><li>Three</li></ul>A {{c1::clozed}} word.<br><br>Clozed list: {{c2::<ul class="markdown-tight"><li>One</li><li>Two</li></ul>}}<br><br>Clozed list item:<ul class="markdown-tight"><li>{{c2::One}}</li><li>Two</li></ul>Clozed nested list:<ul class="markdown-loose"><li>One {{c3::<ul class="markdown-tight"><li>Alpha</li><li>Bravo</li></ul>}}</li><li>Two</li><li>Three</li></ul>A GFM table:<table><thead><tr><th align="left">GFM</th><th align="center">Style</th></tr></thead><tbody><tr><td align="left">table</td><td align="center">with</td></tr><tr><td align="left">cells</td><td align="center">rows</td></tr></tbody></table>A headerless aligned table:<table><tbody><tr><td align="left">table</td><td align="center">with</td></tr><tr><td align="left">cells</td><td align="center">rows</td></tr></tbody></table>A headerless table:<table><tbody><tr><td>table</td><td>with</td></tr><tr><td>cells</td><td>rows</td></tr></tbody></table>Inline media:\u00A0<video id="im-media-87243454-a9c9-4bdf-a763-1347baad9cf3" src="_im-media-87243454-a9c9-4bdf-a763-1347baad9cf3.webm" class="inline-media" controls auto_front="" auto_back="" loop oncanplay="if(this.getRootNode().querySelector(\'anki-editable\') === null &#x26;&#x26; this.offsetParent !== null &#x26;&#x26; ((this.hasAttribute(\'auto_front\') &#x26;&#x26; !document.body.classList.contains(\'back\')) || (this.hasAttribute(\'auto_back\') &#x26;&#x26; document.body.classList.contains(\'back\')))) {this.play();}" oncontextmenu="pycmd(this.id); return true;"></video>\u00A0'
 
 test('markdown_to_html', (t) => {
-  const cfg = init(DEFAULT_CFG as any) as Configuration
+  const converter = new Converter(DEFAULT_CFG)
   for (const test of md) {
     t.deepEqual(
-      markdown_to_html(test[0], cfg),
+      converter.markdown_to_html(test[0]),
       test[1],
       test[2]
     )
   }
 
   t.deepEqual(
-    markdown_to_html(CPX_MD, cfg),
+    converter.markdown_to_html(CPX_MD),
     CPX_HTML,
     'should support complex markdown to render correctly'
   )
@@ -201,17 +200,17 @@ test('markdown_to_html', (t) => {
 })
 
 test('html_to_markdown', (t) => {
-  const cfg = init(DEFAULT_CFG as any) as Configuration
+  const converter = new Converter(DEFAULT_CFG)
   for (const test of html) {
     t.deepEqual(
-      html_to_markdown(test[1], cfg)[0],
+      converter.html_to_markdown(test[1])[0],
       test[0],
       test[2]
     )
   }
 
   t.deepEqual(
-    html_to_markdown(CPX_HTML, cfg)[0],
+    converter.html_to_markdown(CPX_HTML)[0],
     CPX_MD,
     'should support complex markdown to render correctly'
   )
@@ -222,15 +221,15 @@ test('html_to_markdown', (t) => {
 
 // These roundtrips require reasonably formated markdown
 test('roundtrip', (t) => {
-  const cfg = init(DEFAULT_CFG as any)
-  let md = html_to_markdown(markdown_to_html(CPX_MD, cfg), cfg)[0]
+  const converter = new Converter(DEFAULT_CFG)
+  let md = converter.html_to_markdown(converter.markdown_to_html(CPX_MD))[0]
   t.deepEqual(
     md,
     CPX_MD,
     'should support roundtrip of complex markdown without change'
   )
 
-  let html = markdown_to_html(html_to_markdown(CPX_HTML, cfg)[0], cfg)
+  let html = converter.markdown_to_html(converter.html_to_markdown(CPX_HTML)[0])
   t.deepEqual(
     html,
     CPX_HTML,
@@ -242,10 +241,10 @@ test('roundtrip', (t) => {
 
 /*
 test('single', (t) => {
-  const cfg = init(DEFAULT_CFG as any) as Configuration
+  const converter = new Converter(DEFAULT_CFG)
   const test = tests[13]
   t.deepEqual(
-    html_to_markdown(test[1], cfg)[0],
+    converter.html_to_markdown(test[1])[0],
     test[0],
     test[2]
   )
@@ -255,10 +254,10 @@ test('single', (t) => {
 */
 /*
 test('single', (t) => {
-  const cfg = init(DEFAULT_CFG as any) as Configuration
+  const converter = new Converter(DEFAULT_CFG)
   const test = tests[12]
   t.deepEqual(
-    markdown_to_html(test[0], cfg),
+    converter.markdown_to_html(test[0]),
     test[1],
     test[2]
   )
