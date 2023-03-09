@@ -36,7 +36,7 @@ function mdastToHtml(d: Directive): boolean {
                 attribs += `width="${d.attributes.width}" `
         }
     }
-    // @ts-expect-error
+    // @ts-ignore
     this.tag(`<${d.name} id="${id}" class="inline-media" src="${d?.label || ''}" controls ${attribs}oncanplay="if(this.getRootNode().querySelector('anki-editable') === null && this.offsetParent !== null && ((this.hasAttribute('auto_front') && !document.body.classList.contains('back')) || (this.hasAttribute('auto_back') && document.body.classList.contains('back')))) {this.play();}" oncontextmenu="pycmd(this.id); return true;"></${d.name}>`)
     return true
 }
