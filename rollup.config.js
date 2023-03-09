@@ -4,7 +4,7 @@ import commonjs from "@rollup/plugin-commonjs"
 import terser from "@rollup/plugin-terser"
 
 export default {
-  "input": "index.ts",
+  "input": "src/index.ts",
   output: {
     file: "./bin/anki-md-html.js",
     format: "iife",

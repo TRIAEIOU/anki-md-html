@@ -1,5 +1,7 @@
 {
+    "files": ["src/index.ts"],
     "compilerOptions": {
+        "outDir": ".",
         "module": "ESNext",
         "target": "es2018",
         "moduleResolution": "node",
@@ -14,10 +16,8 @@
         "noImplicitAny": false,
         "strictNullChecks": false,
         "forceConsistentCasingInFileNames": true,
-        "esModuleInterop": true,
-        "outDir": "dist"
+        "esModuleInterop": true
     },
-    "include": ["index.ts"],
     "exclude": [
       "node_modules"
     ],

@@ -1,5 +1,5 @@
 import test from 'tape'
-import {Converter, Options} from '../lib'
+import {Converter, Options} from '../src/lib'
 export {}
 // Constants for readability
 const DEFAULT_CFG = {
