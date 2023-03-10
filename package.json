@@ -8,7 +8,7 @@
   "type": "module",
   "dependencies": {
     "@types/hast": "^2.3.4",
-    "hast-util-definition-list": "github:TRIAEIOU/hast-util-definition-list",
+    "hast-util-definition-list": "^1.0.0",
     "hast-util-from-html": "^1.0.1",
     "hast-util-phrasing": "^2.0.2",
     "hast-util-to-html": "^8.0.4",

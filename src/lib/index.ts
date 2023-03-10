@@ -10,7 +10,7 @@ import {toHast as mdastToHast} from 'mdast-util-to-hast'
 import type {Options as MdastToMarkdownOptions} from 'mdast-util-to-markdown'
 
 import {defListToMarkdown, defListFromMarkdown, defListHastHandlers} from 'mdast-util-definition-list'
-import {definitionListHastToMdast} from 'hast-util-definition-list'
+import {defListHastToMdast} from 'hast-util-definition-list'
 
 import {xtableFromMarkdown, xtableToMarkdown} from 'mdast-util-xtable'
 import {xtable} from 'micromark-extension-xtable'
@@ -191,7 +191,7 @@ class Converter {
 
     // Markdown extensions
     if (options[EXTENSIONS][DEF_LIST]) {
-        hast_mdast_hdl.push(definitionListHastToMdast)
+        hast_mdast_hdl.push(defListHastToMdast)
         mdast_hast_hdl.push(defListHastHandlers)
         this.mdast_to_markdown.extensions.push(defListToMarkdown)
         this.markdown_to_mdast.extensions.push(defList)
@@ -321,7 +321,8 @@ class Converter {
         table: 0,
         headless: 0,
         list: 0,
-        heading: 0
+        heading: 0,
+        deflist: 0
     })
 
     /** Recursion function to mutate a nodes children */
@@ -394,11 +395,12 @@ class Converter {
         if (!para.length) return
         const para_ = brs ? para.slice(0, -brs) : para
 
-        // p wrap everywhere except: in lists w/o two <br>'s; in tables or headings
+        // p wrap everywhere except: in lists w/o two <br>'s; in tables, headings or definition lists
         if (
           !phrasing(node) &&
           !state['table'] &&
           !state['heading'] &&
+          !state['deflist'] &&
           ( // lists are special, to have text after a nested list in the same li
             // the outer list has to be loose in markdown, so do the reverse here (p wrap)
             !state['list'] ||
@@ -420,11 +422,13 @@ class Converter {
       /** Incr/decr counters of block levels */
       function update_state(increment: boolean) {
         if (node['tagName'] === 'table')
-          increment ? state['table']++ : state['table']--
+          state['table'] += increment ? 1 : -1
         else if (['ul', 'ol'].includes(node['tagName']))
-          increment ? state['list']++ : state['list']--
+          state['list'] += increment ? 1 : -1
         else if(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(node['tagName']))
-          increment ? state['heading']++ : state['heading']--
+          state['heading'] += increment ? 1 : -1
+        else if(node['tagName'] === 'dl')
+          state['deflist'] += increment ? 1 : -1
       }
     }
   }
@@ -518,14 +522,14 @@ class Converter {
       /** Incr/decr counters of block levels */
       function update_state(increment: boolean) {
         if (node['tagName'] === 'table') {
-          increment ? state['table']++ : state['table']--
+          state['table'] += increment ? 1 : -1
           if (node['properties']['headless'])
-            increment ? state['headless']++ : state['headless']--
+            state['headless'] += increment ? 1 : -1
         }
         else if (['ul', 'ol'].includes(node['tagName']))
-          increment ? state['list']++ : state['list']--
+          state['list'] += increment ? 1 : -1
         else if(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(node['tagName']))
-          increment ? state['heading']++ : state['heading']--
+          state['heading'] += increment ? 1 : -1
       }
     }
   }
