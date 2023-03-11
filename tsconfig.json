@@ -3,7 +3,7 @@
     "compilerOptions": {
         "outDir": ".",
         "module": "ESNext",
-        "target": "es2018",
+        "target": "ES2018",
         "moduleResolution": "node",
         "isolatedModules": true,
         "skipLibCheck": true,

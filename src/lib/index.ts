@@ -216,6 +216,11 @@ class Converter {
     }
 
     // Inlines
+    if (options[EXTENSIONS][STRIKETHROUGH]) {
+      this.markdown_to_mdast.extensions.push(gfmStrikethrough({singleTilde: options[EXTENSIONS][STRIKETHROUGH] === 'single'}))
+      this.markdown_to_mdast.mdastExtensions.push(gfmStrikethroughFromMarkdown)
+      this.mdast_to_markdown.extensions.push(gfmStrikethroughToMarkdown)
+    }
     if (options[EXTENSIONS][UNDERLINE]) {
         const tmp = {mdastNodeName: 'underline', hastNodeName: 'u', char: '_'}
         this.markdown_to_mdast.extensions.push(attention(tmp))
@@ -236,11 +241,6 @@ class Converter {
         this.markdown_to_mdast.mdastExtensions.push(attentionFromMarkdown(tmp))
         this.mdast_to_markdown.extensions.push(attentionToMarkdown(tmp))
         hast_mdast_hdl.push(attentionFromHast(tmp))
-    }
-    if (options[EXTENSIONS][STRIKETHROUGH]) {
-        this.markdown_to_mdast.extensions.push(gfmStrikethrough({singleTilde: options[EXTENSIONS][STRIKETHROUGH] !== 'double'}))
-        this.markdown_to_mdast.mdastExtensions.push(gfmStrikethroughFromMarkdown)
-        this.mdast_to_markdown.extensions.push(gfmStrikethroughToMarkdown)
     }
 
     this.options[NEWLINE] = options[EXTENSIONS][NEWLINE]
