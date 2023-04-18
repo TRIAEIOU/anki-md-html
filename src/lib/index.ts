@@ -177,7 +177,7 @@ class Converter {
   markdown_to_mdast = {extensions: [], mdastExtensions: []}
   mdast_to_hast = {handlers: {} as Record<string, HastToMdastHandle>, allowDangerousHtml: true}
   html_to_hast = {fragment: true}
-  hast_to_html = {allowDangerousHtml: true, allowDangerousCharacters: true}
+  hast_to_html = {allowDangerousHtml: true, allowDangerousCharacters: true, useNamedReferences: true}
   hast_to_mdast = {handlers: {} as Record<string, HastToMdastHandle>}
 
   /////////////////////////////////////////////////////////////////////////////
@@ -206,7 +206,7 @@ class Converter {
     }
 
     // Tables
-    if (options[EXTENSIONS][TABLE_STYLE] !== 'none') {
+    if (options[EXTENSIONS][TABLE_STYLE]) {
         this.markdown_to_mdast.extensions.push(options[EXTENSIONS][TABLE_STYLE] === 'extended'
             ? xtable
             : gfmTable
