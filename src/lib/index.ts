@@ -177,7 +177,7 @@ class Converter {
   markdown_to_mdast = {extensions: [], mdastExtensions: []}
   mdast_to_hast = {handlers: {} as Record<string, HastToMdastHandle>, allowDangerousHtml: true}
   html_to_hast = {fragment: true}
-  hast_to_html = {allowDangerousHtml: true, allowDangerousCharacters: true, useNamedReferences: true}
+  hast_to_html = {allowDangerousHtml: true, allowDangerousCharacters: true, characterReferences: {useNamedReferences: true}}
   hast_to_mdast = {handlers: {} as Record<string, HastToMdastHandle>}
 
   /////////////////////////////////////////////////////////////////////////////
