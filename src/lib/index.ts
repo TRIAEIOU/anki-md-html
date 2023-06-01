@@ -153,7 +153,7 @@ import {phrasing} from "hast-util-phrasing"
  */
 
 
-const TABLE_STYLE = 'Tables'
+const TABLE = 'Tables'
 const NEWLINE = 'Table newline'
 const DEF_LIST = 'Definition lists'
 const INLINE_MEDIA = 'Inline media'
@@ -206,11 +206,12 @@ class Converter {
     }
 
     // Tables
-    if (options[EXTENSIONS][TABLE_STYLE]) {
-        this.markdown_to_mdast.extensions.push(options[EXTENSIONS][TABLE_STYLE] === 'extended'
+    if (options[EXTENSIONS][TABLE]) {
+        this.markdown_to_mdast.extensions.push(options[EXTENSIONS][TABLE] === 'extended'
             ? xtable
             : gfmTable
         )
+        // Always push the xtable as it contains other fixes
         this.markdown_to_mdast.mdastExtensions.push(xtableFromMarkdown)
         this.mdast_to_markdown.extensions.push(xtableToMarkdown())
     }
@@ -314,7 +315,11 @@ class Converter {
 
 
   /////////////////////////////////////////////////////////////////////////////
-  /** Mutate hast generated from HTML before conversion to mdast/markdown */
+  /**
+   * Mutate hast generated from Anki style HTML to Markdown (extended)
+   * compatible HTML (p-wrap, swap i for em, b for strong, table newlines etc.)
+   * before conversion to mdast/markdown
+   */
   mutate_from_html(hast: Node) {
       mutate(hast, {
         table_nl: this.options[NEWLINE],
@@ -434,7 +439,10 @@ class Converter {
   }
 
   /////////////////////////////////////////////////////////////////////////////
-  /** Mutate hast generated from markdown/mdast before conversion to HTML */
+  /**
+   * Mutate hast Markdown (extended) style to Anki compatible style before
+   * conversion to HTML (p-unwrap, swap em for i, strong for b, table newlines etc.)
+   */
   mutate_from_markdown(hast: Node) {
     const br = {type: 'element', tagName: 'br'}
     mutate(hast, {
