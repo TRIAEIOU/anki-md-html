@@ -206,15 +206,13 @@ class Converter {
     }
 
     // Tables
-    if (options[EXTENSIONS][TABLE]) {
-        this.markdown_to_mdast.extensions.push(options[EXTENSIONS][TABLE] === 'extended'
-            ? xtable
-            : gfmTable
-        )
-        // Always push the xtable as it contains other fixes
-        this.markdown_to_mdast.mdastExtensions.push(xtableFromMarkdown)
-        this.mdast_to_markdown.extensions.push(xtableToMarkdown())
-    }
+    this.markdown_to_mdast.extensions.push(options[EXTENSIONS][TABLE] === 'extended'
+        ? xtable
+        : gfmTable
+    )
+    // Always push the xtable as it contains other fixes
+    this.markdown_to_mdast.mdastExtensions.push(xtableFromMarkdown)
+    this.mdast_to_markdown.extensions.push(xtableToMarkdown())
 
     // Inlines
     if (options[EXTENSIONS][STRIKETHROUGH]) {
