@@ -36,16 +36,16 @@
     "@rollup/plugin-typescript": "^11.0.0",
     "@types/node": "^18.16.0",
     "node": "18.16.0",
-    "rimraf": "^4.3.1",
     "rollup": "^3.16.0",
+    "shx": "^0.3.4",
     "tape": "^5.6.3",
     "ts-node": "^10.9.1",
     "tslib": "^2.5.0",
-    "typescript": "^4.9.5"
+    "typescript": "^5.0.0"
   },
   "scripts": {
-    "build-lib": "rimraf --glob ./lib/* && tsc",
-    "build-bin": "rimraf --glob ./bin/* && \"./node_modules/.bin/rollup\" -c",
+    "build-lib": "shx rm -rf ./lib/* && tsc",
+    "build-bin": "shx rm -rf ./bin/* && \"./node_modules/.bin/rollup\" -c",
     "build": "npm run build-lib && npm run build-bin",
     "test": "ts-node --print test",
     "test-action": "ts-node --print test/single.ts"
