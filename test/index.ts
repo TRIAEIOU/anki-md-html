@@ -203,14 +203,14 @@ test('html_to_markdown', (t) => {
   const converter = new Converter(DEFAULT_CFG)
   for (const test of html) {
     t.deepEqual(
-      converter.html_to_markdown(test[1])[0],
+      converter.html_to_markdown(test[1]),
       test[0],
       test[2]
     )
   }
 
   t.deepEqual(
-    converter.html_to_markdown(CPX_HTML)[0],
+    converter.html_to_markdown(CPX_HTML),
     CPX_MD,
     'should support complex markdown to render correctly'
   )
@@ -222,14 +222,14 @@ test('html_to_markdown', (t) => {
 // These roundtrips require reasonably formated markdown
 test('roundtrip', (t) => {
   const converter = new Converter(DEFAULT_CFG)
-  let md = converter.html_to_markdown(converter.markdown_to_html(CPX_MD))[0]
+  let md = converter.html_to_markdown(converter.markdown_to_html(CPX_MD))
   t.deepEqual(
     md,
     CPX_MD,
     'should support roundtrip of complex markdown without change'
   )
 
-  let html = converter.markdown_to_html(converter.html_to_markdown(CPX_HTML)[0])
+  let html = converter.markdown_to_html(converter.html_to_markdown(CPX_HTML))
   t.deepEqual(
     html,
     CPX_HTML,
@@ -244,7 +244,7 @@ test('single', (t) => {
   const converter = new Converter(DEFAULT_CFG)
   const test = tests[13]
   t.deepEqual(
-    converter.html_to_markdown(test[1])[0],
+    converter.html_to_markdown(test[1]),
     test[0],
     test[2]
   )

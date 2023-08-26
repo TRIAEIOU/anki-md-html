@@ -30,7 +30,7 @@ const md = "<"
 test('single', (t) => {
   const converter = new Converter(DEFAULT_CFG)
   t.deepEqual(
-    converter.html_to_markdown(html)[0],
+    converter.html_to_markdown(html),
     md,
     "should match"
   )
