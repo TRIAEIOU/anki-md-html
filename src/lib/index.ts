@@ -181,7 +181,7 @@ class Converter {
   hast_to_mdast = {handlers: {} as Record<string, HastToMdastHandle>}
 
   /////////////////////////////////////////////////////////////////////////////
-  /** Initialize configuration for use with mardown_to_html/html_to_markdown */
+  /** Initialize configuration for use with markdown_to_html/html_to_markdown */
   constructor (options: Options) {
     const mdast_hast_hdl: any[] = [mdastToHastListType]
     const hast_mdast_hdl: any[] = [hastToMdastListType, tmp_li_bugfix]
@@ -262,14 +262,13 @@ class Converter {
 
   /////////////////////////////////////////////////////////////////////////////
   /** Convert HTML to markdown */
-  html_to_markdown(html:string): [string, number] {
-    if (!html) return ['', 0]
+  html_to_markdown(html:string): string {
+    if (!html) return ''
     const hast = hastFromHtml(html, this.html_to_hast)
     this.mutate_from_html(hast)
     const mdast = hastToMdast(hast, this.hast_to_mdast)
     // Strip spec mdastToMarkdown eof newline
-    const md = mdastToMarkdown(mdast, this.mdast_to_markdown).slice(0, -1)
-    return [md, this.parse_cloze(md)]
+    return mdastToMarkdown(mdast, this.mdast_to_markdown).slice(0, -1)
   }
 
   /////////////////////////////////////////////////////////////////////////////
