@@ -16,7 +16,8 @@
         "noImplicitAny": false,
         "strictNullChecks": false,
         "forceConsistentCasingInFileNames": true,
-        "esModuleInterop": true
+        "esModuleInterop": true,
+        "declaration": true
     },
     "exclude": [
       "node_modules"
