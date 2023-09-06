@@ -8,7 +8,7 @@ import type {State as HastState} from 'hast-util-to-mdast'
 import {list as hastToMdastList} from 'hast-util-to-mdast/lib/handlers/list'
 import {list as mdastToHastList} from 'mdast-util-to-hast/lib/handlers/list'
 
-function set_spread(state: HastState, list: Element, type?: 'auto'|'tight'|'loose') {
+function set_spread(state: HastState, list: Element, type: 'auto'|'tight'|'loose') {
     const mdast = hastToMdastList(state, list) as MdastList
     mdast.spread = type === 'auto'
         ? mdast.spread || (list.properties?.className as string)?.includes('markdown-loose') || false
@@ -17,7 +17,7 @@ function set_spread(state: HastState, list: Element, type?: 'auto'|'tight'|'loos
 }
 
 // Add correct class
-function add_class(state: MdastState, list: MdastList, type?: 'auto'|'tight'|'loose') {
+function add_class(state: MdastState, list: MdastList, type: 'auto'|'tight'|'loose') {
     const spread = type === 'auto'
         ? list.spread || list.children?.some(li => li.spread)
         : type === 'loose'
