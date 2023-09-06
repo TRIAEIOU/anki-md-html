@@ -163,6 +163,7 @@ const UNDERLINE = "Underline"
 const SUPERSCRIPT = "Superscript"
 const SUBSCRIPT = "Subscript"
 const STRIKETHROUGH = "Strikethrough"
+const FORCE_LIST_STYLE = "Force list style"
 
 interface Options {
   [MARKDOWN]: MdastToMarkdownOptions
@@ -183,8 +184,8 @@ class Converter {
   /////////////////////////////////////////////////////////////////////////////
   /** Initialize configuration for use with markdown_to_html/html_to_markdown */
   constructor (options: Options) {
-    const mdast_hast_hdl: any[] = [mdastToHastListType]
-    const hast_mdast_hdl: any[] = [hastToMdastListType, tmp_li_bugfix]
+    const mdast_hast_hdl: any[] = []
+    const hast_mdast_hdl: any[] = [tmp_li_bugfix]
 
     if (options[MARKDOWN]['hardBreak'] === "spaces")
         this.mdast_to_markdown.extensions.push(breakSpaces)
@@ -241,6 +242,10 @@ class Converter {
         this.mdast_to_markdown.extensions.push(attentionToMarkdown(tmp))
         hast_mdast_hdl.push(attentionFromHast(tmp))
     }
+
+    // Set list type parsing style (forced to one or parse)
+    hast_mdast_hdl.push(hastToMdastListType(options[EXTENSIONS][FORCE_LIST_STYLE] || 'auto'))
+    mdast_hast_hdl.push(mdastToHastListType(options[EXTENSIONS][FORCE_LIST_STYLE] || 'auto'))
 
     this.options[NEWLINE] = options[EXTENSIONS][NEWLINE]
     Object.assign(this.mdast_to_markdown, options[MARKDOWN])

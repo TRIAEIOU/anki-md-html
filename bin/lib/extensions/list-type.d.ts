@@ -5,13 +5,11 @@ import type { Element } from 'hast';
 import type { List as MdastList } from 'mdast';
 import type { State as MdastState } from 'mdast-util-to-hast';
 import type { State as HastState } from 'hast-util-to-mdast';
-declare function set_spread(state: HastState, list: Element): MdastList;
-declare function add_class(state: MdastState, list: MdastList): Element;
-declare const hastToMdastListType: {
-    ul: typeof set_spread;
-    ol: typeof set_spread;
+declare const hastToMdastListType: (type: 'auto' | 'tight' | 'loose') => {
+    ul: (state: HastState, list: Element) => MdastList;
+    ol: (state: HastState, list: Element) => MdastList;
 };
-declare const mdastToHastListType: {
-    list: typeof add_class;
+declare const mdastToHastListType: (type: 'auto' | 'tight' | 'loose') => {
+    list: (state: MdastState, list: MdastList) => Element;
 };
 export { hastToMdastListType, mdastToHastListType };
