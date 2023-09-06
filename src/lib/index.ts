@@ -163,7 +163,7 @@ const UNDERLINE = "Underline"
 const SUPERSCRIPT = "Superscript"
 const SUBSCRIPT = "Subscript"
 const STRIKETHROUGH = "Strikethrough"
-const FORCE_LIST_STYLE = "Force list style"
+const LIST_SPREAD = "List spread"
 
 interface Options {
   [MARKDOWN]: MdastToMarkdownOptions
@@ -244,8 +244,8 @@ class Converter {
     }
 
     // Set list type parsing style (forced to one or parse)
-    hast_mdast_hdl.push(hastToMdastListType(options[EXTENSIONS][FORCE_LIST_STYLE] || 'auto'))
-    mdast_hast_hdl.push(mdastToHastListType(options[EXTENSIONS][FORCE_LIST_STYLE] || 'auto'))
+    hast_mdast_hdl.push(hastToMdastListType(options[EXTENSIONS][LIST_SPREAD] || 'auto'))
+    mdast_hast_hdl.push(mdastToHastListType(options[EXTENSIONS][LIST_SPREAD] || 'auto'))
 
     this.options[NEWLINE] = options[EXTENSIONS][NEWLINE]
     Object.assign(this.mdast_to_markdown, options[MARKDOWN])
