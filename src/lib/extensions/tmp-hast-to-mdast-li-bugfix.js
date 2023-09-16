@@ -93,7 +93,6 @@ function spreadout(node) {
 
   while (++index < node.children.length) {
     const child = node.children[index]
-
     if (child.type === 'element') {
       if (phrasing(child)) {
         seenFlow = 0 // CHANGE
@@ -104,7 +103,9 @@ function spreadout(node) {
         return true
       }
 
-      seenFlow++ // CHANGE
+      if (child.tagName !== 'li') { // CHANGE - `li` are not counted as blocks
+        seenFlow++ // CHANGE
+      }
     }
   }
 

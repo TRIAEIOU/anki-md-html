@@ -6,4 +6,4 @@ Exports class `Converter` with methods `html_to_markdown(html: string): string` 
 
 ## Changelog
 
-- 230826: `html_to_markdown` now only returns the markdown string (earlier returned array of `[markdown, ordinal]`), added config options `tightenLists` (when `true` removes empty line before tight lists) and `listItemIndentLeadOnly` (when `true` in conjunction with `listItemIndent`: `"tab"` will indent list items at multiples of 4 spaces but one space afte the bullet).
+- 230826: `html_to_markdown` now only returns the markdown string (earlier returned array of `[markdown, ordinal]`), added config options `tightenLists` (when `true` removes empty line before tight lists) and `listItemIndentLeadOnly` (when `true` in conjunction with `listItemIndent`: `"tab"` will indent list items at multiples of 4 spaces but one space afte the bullet). Adjust spread logic to not count `li` as blocks (as that will mean all nested lists always leads to spread)
