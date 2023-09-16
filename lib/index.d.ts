@@ -1,7 +1,10 @@
-import type { Options as MdastToMarkdownOptions } from 'mdast-util-to-markdown';
+import type { Options as MdastToMarkdownOptionsOriginal } from 'mdast-util-to-markdown';
 import type { Node } from "hast";
 declare const MARKDOWN = "Markdown format";
 declare const EXTENSIONS = "Markdown extensions";
+interface MdastToMarkdownOptions extends MdastToMarkdownOptionsOriginal {
+    tightenLists?: boolean;
+}
 interface Options {
     [MARKDOWN]: MdastToMarkdownOptions;
     [EXTENSIONS]: object;
@@ -12,7 +15,6 @@ declare class Converter {
         "Table newline": string;
     };
     mdast_to_markdown: {
-        options: {};
         extensions: any[];
     };
     markdown_to_mdast: {

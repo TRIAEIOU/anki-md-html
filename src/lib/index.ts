@@ -7,7 +7,7 @@ import type {Handle as HastToMdastHandle} from 'hast-util-to-mdast'
 import {fromMarkdown as markdownToMdast} from 'mdast-util-from-markdown'
 import {toMarkdown as mdastToMarkdown} from 'mdast-util-to-markdown'
 import {toHast as mdastToHast} from 'mdast-util-to-hast'
-import type {Options as MdastToMarkdownOptions} from 'mdast-util-to-markdown'
+import type {Options as MdastToMarkdownOptionsOriginal} from 'mdast-util-to-markdown'
 
 import {defListToMarkdown, defListFromMarkdown, defListHastHandlers} from 'mdast-util-definition-list'
 import {defListHastToMdast} from 'hast-util-definition-list'
@@ -34,6 +34,8 @@ import {defList} from 'micromark-extension-definition-list'
 import {breakSpaces} from './extensions/break-spaces'
 import {hastToMdastListType, mdastToHastListType} from './extensions/list-type'
 import {li as tmp_li_bugfix} from './extensions/tmp-hast-to-mdast-li-bugfix'
+import {listItem} from './extensions/list-item-lead-only'
+import {tightenLists} from './extensions/list-type'
 
 import type {Node} from "hast"
 import {phrasing} from "hast-util-phrasing"
@@ -164,6 +166,10 @@ const SUPERSCRIPT = "Superscript"
 const SUBSCRIPT = "Subscript"
 const STRIKETHROUGH = "Strikethrough"
 
+interface MdastToMarkdownOptions extends MdastToMarkdownOptionsOriginal {
+  tightenLists?: boolean
+}
+
 interface Options {
   [MARKDOWN]: MdastToMarkdownOptions
   [EXTENSIONS]: object
@@ -173,7 +179,7 @@ class Converter {
   /////////////////////////////////////////////////////////////////////////////
   /** Properties */
   options = {[NEWLINE]: ""}
-  mdast_to_markdown = {options: {}, extensions: []}
+  mdast_to_markdown = {extensions: []}
   markdown_to_mdast = {extensions: [], mdastExtensions: []}
   mdast_to_hast = {handlers: {} as Record<string, HastToMdastHandle>, allowDangerousHtml: true}
   html_to_hast = {fragment: true}
@@ -185,9 +191,14 @@ class Converter {
   constructor (options: Options) {
     const mdast_hast_hdl: any[] = [mdastToHastListType]
     const hast_mdast_hdl: any[] = [hastToMdastListType, tmp_li_bugfix]
+    Object.assign(this.mdast_to_markdown, options[MARKDOWN])
 
     if (options[MARKDOWN]['hardBreak'] === "spaces")
-        this.mdast_to_markdown.extensions.push(breakSpaces)
+      this.mdast_to_markdown.extensions.push(breakSpaces)
+    if (options[MARKDOWN]['tightenLists'])
+      this.mdast_to_markdown['join'] = [tightenLists]
+    if (options[MARKDOWN]['listItemIndentLeadOnly'])
+      this.mdast_to_markdown['handlers'] = {listItem}
 
     // Markdown extensions
     if (options[EXTENSIONS][DEF_LIST]) {
@@ -243,7 +254,6 @@ class Converter {
     }
 
     this.options[NEWLINE] = options[EXTENSIONS][NEWLINE]
-    Object.assign(this.mdast_to_markdown, options[MARKDOWN])
     this.mdast_to_hast.handlers = flatten(mdast_hast_hdl) as any
     this.hast_to_mdast.handlers = flatten(hast_mdast_hdl) as any
 

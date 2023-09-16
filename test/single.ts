@@ -1,11 +1,15 @@
 import test from 'tape'
 import {Converter, Options} from '../src/lib'
+import { tightenLists } from '../src/lib/extensions/list-type'
+
 export {}
 // Constants for readability
 const DEFAULT_CFG = {
   "Markdown format": {
     "bullet": "-",
-    "listItemIndent": "one",
+    "listItemIndent": "tab",
+    "listItemIndentLeadOnly": true,
+    "tightenLists": true,
     "ruleRepetition": 10,
     "tightDefinitions": true,
     "fences": true,
@@ -24,8 +28,8 @@ const DEFAULT_CFG = {
 } as Options
 
 
-const html = "<"
-const md = "<"
+const html = 'one:<ul class="markdown-tight"><li>item</li><li>item2<ol class="markdown-tight"><li>n1</li><li>n2</li></ol></li></ul>two'
+const md = 'one:\n- item\n- item2\n    1. n1\n    2. n2\n\ntwo'
 
 test('single', (t) => {
   const converter = new Converter(DEFAULT_CFG)
