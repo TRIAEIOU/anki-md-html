@@ -33,9 +33,6 @@ const md = 'one:\n- item\n- item2\n    1. n1\n    2. n2\n\ntwo'
 
 test('single', (t) => {
   const converter = new Converter(DEFAULT_CFG)
-  console.log('---------------------------------------------------')
-  console.log(converter.html_to_markdown(html))
-  console.log('---------------------------------------------------')
   t.deepEqual(
     converter.html_to_markdown(html),
     md,
