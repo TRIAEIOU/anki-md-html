@@ -10,6 +10,7 @@ const DEFAULT_CFG = {
     "listItemIndent": "tab",
     "listItemIndentLeadOnly": true,
     "tightenLists": true,
+    "tightenHeadings": 3,
     "ruleRepetition": 10,
     "tightDefinitions": true,
     "fences": true,

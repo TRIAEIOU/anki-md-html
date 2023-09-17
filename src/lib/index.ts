@@ -36,6 +36,7 @@ import {hastToMdastListType, mdastToHastListType} from './extensions/list-type'
 import {li as tmp_li_bugfix} from './extensions/tmp-hast-to-mdast-li-bugfix'
 import {listItem} from './extensions/list-item-lead-only'
 import {tightenLists} from './extensions/list-type'
+import {tightenHeadings} from './extensions/tighten-headings'
 
 import type {Node} from "hast"
 import {phrasing} from "hast-util-phrasing"
@@ -193,12 +194,15 @@ class Converter {
     const hast_mdast_hdl: any[] = [hastToMdastListType, tmp_li_bugfix]
     Object.assign(this.mdast_to_markdown, options[MARKDOWN])
 
+    this.mdast_to_markdown['join'] = []
     if (options[MARKDOWN]['hardBreak'] === "spaces")
       this.mdast_to_markdown.extensions.push(breakSpaces)
-    if (options[MARKDOWN]['tightenLists'])
-      this.mdast_to_markdown['join'] = [tightenLists]
     if (options[MARKDOWN]['listItemIndentLeadOnly'])
       this.mdast_to_markdown['handlers'] = {listItem}
+    if (options[MARKDOWN]['tightenLists'])
+      this.mdast_to_markdown['join'].push(tightenLists)
+    if (options[MARKDOWN]['tightenHeadings'])
+      this.mdast_to_markdown['join'].push(tightenHeadings(options[MARKDOWN]['tightenHeadings']))
 
     // Markdown extensions
     if (options[EXTENSIONS][DEF_LIST]) {
