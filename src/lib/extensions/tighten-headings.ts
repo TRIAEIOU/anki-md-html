@@ -8,7 +8,7 @@ const tightenHeadings = (level: number) => (left: Node, right: Node, parent: Nod
 : number|boolean|undefined =>
 {
     // Remove blank line after headings of `level` and above 
-    if (left.type === `heading` && left['depth'] >= level)
+    if (left.type === 'heading' && left['depth'] >= level && right.type !== 'heading')
         return 0
     // undefined → default action
 }

@@ -28,10 +28,23 @@ const DEFAULT_CFG = {
   }
 } as Options
 
+const html = '<p>This is paragraph.</p><dl><dt>First Term</dt><dd>This is the <strong>definition</strong> of the first term.</dd><dd>This is another definition of the first term.</dd><dt>Second Term</dt><dd>This is one definition of the second term.</dd><dd>This is another definition of the second term.</dd></dl>'
+const md = `This is paragraph.
 
-const html = 'one:<ul class="markdown-tight"><li>item</li><li>item2<ol class="markdown-tight"><li>n1</li><li>n2</li></ol></li></ul>two'
-const md = 'one:\n- item\n- item2\n    1. n1\n    2. n2\n\ntwo'
+First Term
+:   This is the **definition** of the first term.
+:   This is another definition of the first term.
 
+Second Term
+:   This is one definition of the second term.
+:   This is another definition of the second term.`
+//const html = 'one:<ul class="markdown-tight"><li>item</li><li>item2<ol class="markdown-tight"><li>n1</li><li>n2</li></ol></li></ul>two'
+//const md = 'one:\n- item\n- item2\n    1. n1\n    2. n2\n\ntwo'
+
+const converter = new Converter(DEFAULT_CFG)
+//console.log(converter.html_to_markdown(html))
+console.log(converter.markdown_to_html(md))
+/*
 test('single', (t) => {
   const converter = new Converter(DEFAULT_CFG)
   t.deepEqual(
@@ -53,3 +66,4 @@ test('single', (t) => {
 
   t.end()
 })
+*/

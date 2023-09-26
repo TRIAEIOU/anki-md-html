@@ -27,7 +27,7 @@ function mdastToHtml(d: Directive): boolean {
         if ('auto_front' in d.attributes) attribs += 'auto_front '
         if ('auto_back' in d.attributes) attribs += 'auto_back '
         if ('loop' in d.attributes) attribs += 'loop '
-        if ('mute' in d.attributes) attribs += 'mute '
+        if ('muted' in d.attributes) attribs += 'muted '
 
         if (d.name === 'video') {
             if('height' in d.attributes && parseInt(d.attributes.height) > -1)
@@ -63,7 +63,7 @@ function hastToMdast(state: HastState, node: any): void | MdastContent | MdastCo
   if('auto_front' in node.properties && node.properties.auto_front !== 'false') props['auto_front'] = ''
   if('auto_back' in node.properties && node.properties.auto_back !== 'false') props['auto_back'] = ''
   if(node.properties?.loop) props['loop'] = ''
-  if('mute' in node.properties && node.properties.mute !== 'false') props['mute'] = ''
+  if('muted' in node.properties && node.properties.muted !== 'false') props['muted'] = ''
 
   if (node.tagName === 'video') {
     if('height' in node.properties && parseInt(node.properties.height) > -1)
