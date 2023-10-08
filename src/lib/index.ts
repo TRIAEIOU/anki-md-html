@@ -236,7 +236,7 @@ class Converter {
       this.mdast_to_markdown.extensions.push(gfmStrikethroughToMarkdown)
     }
     if (options[EXTENSIONS][UNDERLINE]) {
-        const tmp = {mdastNodeName: 'underline', hastNodeName: 'u', char: '_'}
+        const tmp = {mdastNodeName: 'underline', hastNodeName: 'u', char: '='}
         this.markdown_to_mdast.extensions.push(attention(tmp))
         this.markdown_to_mdast.mdastExtensions.push(attentionFromMarkdown(tmp))
         this.mdast_to_markdown.extensions.push(attentionToMarkdown(tmp))

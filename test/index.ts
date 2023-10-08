@@ -63,8 +63,8 @@ A second paragraph`,
 `Some <i>italic</i> text`,
 'should convert `emphasis` to `<i>`'
 ], [
-`Some _underlined_ text`,
-`Some <u>underlined</u> text`,
+`Some =underlined **bold** text= here`,
+`Some <u>underlined <b>bold</b> text</u> here`,
 'should support underline'
 ], [
 `Some ^superscript^ text`,
